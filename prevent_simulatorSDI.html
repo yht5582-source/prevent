@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PREVENT 心腎代謝風險變數模擬器 (含 SDI 社會剝奪指數)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --highlight: #fee2e2;
+            --highlight-border: #ef4444;
+            --sdi-bg: #e0e7ff;
+            --sdi-border: #4f46e5;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 10px;
+            font-size: 1.25rem;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] {
+            flex-grow: 1;
+            cursor: pointer;
+        }
+        .val-display {
+            min-width: 50px;
+            text-align: right;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        /* 腎臟變數高光顯示 */
+        .kidney-highlight {
+            background-color: var(--highlight);
+            border-left: 4px solid var(--highlight-border);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        /* SDI 高光顯示 */
+        .sdi-highlight {
+            background-color: var(--sdi-bg);
+            border-left: 4px solid var(--sdi-border);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .sdi-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            margin-left: 10px;
+        }
+        /* 結果顯示區 */
+        .result-box {
+            text-align: center;
+            padding: 30px 10px;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .risk-label {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .ckm-stage {
+            background-color: #e5e7eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .ckm-stage span {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 15px;
+        }
+        .toggle-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>📊 臨床生理參數調整</h2>
+        
+        <div class="control-group">
+            <label>年齡 (Age): 30 - 79</label>
+            <div class="input-row">
+                <input type="range" id="age" min="30" max="79" value="55" oninput="calculateRisk()">
+                <span class="val-display" id="age-val">55</span> 歲
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>收縮壓 (Systolic BP): 90 - 200 mmHg</label>
+            <div class="input-row">
+                <input type="range" id="sbp" min="90" max="200" value="135" oninput="calculateRisk()">
+                <span class="val-display" id="sbp-val">135</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>身體質量指數 (BMI): 18 - 40</label>
+            <div class="input-row">
+                <input type="range" id="bmi" min="18" max="40" value="28" step="0.1" oninput="calculateRisk()">
+                <span class="val-display" id="bmi-val">28</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>是否罹患糖尿病 / 抽菸</label>
+            <div class="toggle-group">
+                <label><input type="checkbox" id="diabetes" onchange="calculateRisk()"> 糖尿病</label>
+                <label><input type="checkbox" id="smoker" onchange="calculateRisk()"> 抽菸</label>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 30px;">🩸 心腎關鍵變數 (PREVENT 革新重點)</h2>
+        <div class="kidney-highlight">
+            <div class="control-group">
+                <label>估算腎絲球過濾率 (eGFR): 15 - 120 ml/min</label>
+                <div class="input-row">
+                    <input type="range" id="egfr" min="15" max="120" value="85" oninput="calculateRisk()">
+                    <span class="val-display" id="egfr-val">85</span>
+                </div>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 0;">
+                <label>尿液白蛋白/肌酸酐比值 (uACR): 0 - 3000 mg/g</label>
+                <div class="input-row">
+                    <input type="range" id="uacr" min="0" max="1000" value="15" step="5" oninput="calculateRisk()">
+                    <span class="val-display" id="uacr-val">15</span>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 30px;">🌍 社會健康決定因素 (SDOH)</h2>
+        <div class="sdi-highlight">
+            <div class="control-group" style="margin-bottom: 0;">
+                <label>社會剝奪指數 (SDI): 1 - 10 分 <span id="sdi-badge" class="sdi-badge">中度剝奪</span></label>
+                <div class="input-row">
+                    <input type="range" id="sdi" min="1" max="10" value="5" oninput="calculateRisk()">
+                    <span class="val-display" id="sdi-val">5</span>
+                </div>
+                <small style="color:#666;">
+                    綜合貧窮率、教育、居住擁擠度計算。
+                    <br>
+                    分數越高代表居住區醫療資源越匱乏。
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card result-box">
+        <h2>🎯 10年總心血管事件風險預測</h2>
+        
+        <div class="score-circle" id="score-circle">
+            <span id="risk-score">0%</span>
+        </div>
+        
+        <div class="risk-label" id="risk-label">低風險</div>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 30px;">
+            包含心肌梗塞、中風與心臟衰竭發生率
+        </p>
+
+        <div class="ckm-stage">
+            <div style="margin-bottom: 10px;">目前心腎代謝健康分級：</div>
+            <span id="ckm-stage-val">Stage 0</span>
+            <p id="ckm-desc" style="font-size: 0.9rem; color: #4b5563; margin-top: 8px;">
+                無風險因子。
+            </p>
+        </div>
+        
+        <div id="sdi-warning" style="margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 0.9rem; display: none; background-color: #fee2e2; color: #b91c1c; text-align: left; border: 1px solid #f87171;">
+            <strong>⚠️ 社會環境風險警示：</strong> 該患者居住於高剝奪社區。研究顯示，即使臨床指數相同，資源匱乏地區的患者因就醫困難或健康識能不足，其心臟病發與死亡風險仍會顯著增加，需加強衛教與社工介入。
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初始執行一次運算
+    window.onload = function() {
+        calculateRisk();
+    };
+
+    function calculateRisk() {
+        // 1. 取得所有輸入值
+        const age = parseFloat(document.getElementById('age').value);
+        const sbp = parseFloat(document.getElementById('sbp').value);
+        const bmi = parseFloat(document.getElementById('bmi').value);
+        const egfr = parseFloat(document.getElementById('egfr').value);
+        const uacr = parseFloat(document.getElementById('uacr').value);
+        const sdi = parseInt(document.getElementById('sdi').value);
+        const isDiabetes = document.getElementById('diabetes').checked;
+        const isSmoker = document.getElementById('smoker').checked;
+
+        // 更新 UI 顯示的數值
+        document.getElementById('age-val').innerText = age;
+        document.getElementById('sbp-val').innerText = sbp;
+        document.getElementById('bmi-val').innerText = bmi.toFixed(1);
+        document.getElementById('egfr-val').innerText = egfr;
+        document.getElementById('uacr-val').innerText = uacr;
+        document.getElementById('sdi-val').innerText = sdi;
+
+        // 更新 SDI 標籤顏色與文字
+        const sdiBadge = document.getElementById('sdi-badge');
+        const sdiWarning = document.getElementById('sdi-warning');
+        
+        if (sdi <= 3) {
+            sdiBadge.innerText = "低度剝奪 (資源充足)";
+            sdiBadge.style.backgroundColor = "var(--green)";
+            sdiWarning.style.display = "none";
+        } else if (sdi <= 6) {
+            sdiBadge.innerText = "中度剝奪";
+            sdiBadge.style.backgroundColor = "var(--yellow)";
+            sdiWarning.style.display = "none";
+        } else {
+            sdiBadge.innerText = "高度剝奪 (資源匱乏)";
+            sdiBadge.style.backgroundColor = "var(--red)";
+            sdiWarning.style.display = "block";
+        }
+
+        // 2. 決定 CKM 分期 (簡化邏輯)
+        let stage = 0;
+        let stageDesc = "良好的心腎代謝健康，無顯著風險因子。";
+
+        if (bmi >= 25) {
+            stage = 1;
+            stageDesc = "過度脂肪蓄積（過重或肥胖），尚未出現代謝與腎臟異常。";
+        }
+        if (sbp >= 130 || isDiabetes || (egfr < 90 && egfr >= 60) || (uacr >= 30 && uacr < 300)) {
+            stage = 2;
+            stageDesc = "已出現代謝危險因子（高血壓/糖尿病）或初期腎臟損傷。";
+        }
+        if ((isDiabetes && (egfr < 60 || uacr >= 30)) || egfr < 45 || uacr >= 300) {
+            stage = 3;
+            stageDesc = "心腎代謝高風險群！腎臟已有顯著實質損傷或合併多重代謝疾病。";
+        }
+
+        document.getElementById('ckm-stage-val').innerText = `Stage ${stage}`;
+        document.getElementById('ckm-desc').innerText = stageDesc;
+
+        // 3. 模擬計算風險分數 (Mock PREVENT Logic)
+        let baseRisk = (age - 30) * 0.2; 
+        
+        // 臨床代謝與腎臟變數
+        if (sbp >= 130) baseRisk += (sbp - 120) * 0.15;
+        if (bmi >= 25) baseRisk += (bmi - 25) * 0.3;
+        if (isDiabetes) baseRisk += 8.0;
+        if (isSmoker) baseRisk += 5.0;
+
+        if (egfr < 60) baseRisk += (60 - egfr) * 0.4;
+        if (uacr >= 30) {
+            baseRisk += 3.0; 
+            if (uacr >= 300) baseRisk += 7.0 + (uacr/100); 
+        }
+
+        // === SDI 社會剝奪指數的乘數效應 ===
+        // 模擬：如果患者已有疾病風險（baseRisk > 5%），高 SDI 會成為放大器
+        let sdiMultiplier = 1.0;
+        if (baseRisk > 5.0) {
+            if (sdi >= 7) {
+                // 高剝奪區：風險放大 1.25 倍
+                sdiMultiplier = 1.25; 
+            } else if (sdi <= 3) {
+                // 低剝奪區：資源好，醫療順從性高，風險略降
+                sdiMultiplier = 0.9;
+            }
+        }
+        
+        let finalRisk = Math.max(0.1, Math.min(baseRisk * sdiMultiplier, 99.9));
+
+        // 4. 更新 UI 顏色與分數
+        const scoreCircle = document.getElementById('score-circle');
+        const riskLabel = document.getElementById('risk-label');
+        const riskScoreText = document.getElementById('risk-score');
+
+        riskScoreText.innerText = finalRisk.toFixed(1) + "%";
+
+        if (finalRisk < 7.5) {
+            scoreCircle.style.backgroundColor = 'var(--green)';
+            riskLabel.innerText = "🟢 低風險";
+            riskLabel.style.color = 'var(--green)';
+        } else if (finalRisk >= 7.5 && finalRisk < 20) {
+            scoreCircle.style.backgroundColor = 'var(--yellow)';
+            riskLabel.innerText = "🟡 中度 / 臨界風險";
+            riskLabel.style.color = 'var(--yellow)';
+        } else {
+            scoreCircle.style.backgroundColor = 'var(--red)';
+            riskLabel.innerText = "🔴 高風險";
+            riskLabel.style.color = 'var(--red)';
+        }
+    }
+</script>
+
+</body>
+</html>
