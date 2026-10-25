@@ -1,54 +1,42 @@
 # PREVENT 心腎代謝風險變數模擬器
 
-以繁體中文呈現的單頁互動式教學工具，用於觀察年齡、血壓、BMI、糖尿病、吸菸、腎功能、蛋白尿與社會剝奪程度等因素，如何影響模擬的 10 年心血管事件風險與心血管－腎臟－代謝（CKM）分期。
+以繁體中文呈現的單頁互動式工具：實作 AHA **PREVENT 方程式**（Khan SS, et al. *Circulation* 2024;149:430–449），計算 10 年與 30 年總心血管疾病（CVD）、ASCVD 與心衰竭風險，並以「同一位病人只改變 SDI」的方式呈現社會剝奪指數的影響，同時依 AHA 2023 CKM advisory 判定心血管－腎臟－代謝分期。
 
 [開啟線上版本](https://yht5582-source.github.io/prevent/)
 
 > [!IMPORTANT]
-> 本專案是概念展示與教學用模擬器。程式使用自訂的簡化加權邏輯，**並未實作或驗證美國心臟學會（AHA）正式 PREVENT 方程式**，輸出的風險百分比與 CKM 分期不得用於診斷、治療、用藥或其他臨床決策。需要正式風險評估時，請使用 [AHA PREVENT Calculator](https://professional.heart.org/en/guidelines-and-statements/prevent-calculator) 或經驗證的正式實作。
+> 係數取自 PREVENT 原始發表，並以 R 套件 [preventr](https://github.com/martingmayer/preventr) 0.12.1 的 300 組隨機病例（涵蓋 base / UACR / HbA1c / SDI / full 五種模型）逐項驗證到小數第三位。本頁為教學與臨床輔助用途，不取代醫師判斷；正式評估請以 [AHA PREVENT Calculator](https://professional.heart.org/en/guidelines-and-statements/prevent-calculator) 為準。
 
-## 專案功能
+## 功能
 
-- 即時調整臨床與社會環境變數，無須重新整理頁面。
-- 顯示模擬的 10 年總心血管事件風險，涵蓋心肌梗塞、中風與心臟衰竭的概念性呈現。
-- 依模擬結果區分低、中度／臨界及高風險。
-- 以簡化規則顯示 CKM Stage 0 至 Stage 3。
-- 在高 SDI 情境下顯示社會環境風險提醒。
-- 採響應式雙欄版面，可於桌面與行動裝置使用。
+- **PREVENT 五種模型自動切換**：只填必要變數用 base model；啟用 UACR、HbA1c 或 SDI 時依 preventr 的規則切換到對應模型或 full model（缺項以 missing 指標處理）。
+- **10 年與 30 年風險**：總 CVD、ASCVD、心衰竭；>59 歲的 30 年估計標示為可信度低。
+- **SDI 對照**：同一位病人在 SDI 1–3 / 4–6 / 7–10 / 未知時的 10 年總 CVD，並計算倍數與絕對差。
+- **CKM 分期 0–4**：過度脂肪（亞洲 BMI ≥23 / 腰圍切點）、糖尿病前期、高血壓、高 TG、代謝症候群、KDIGO CKD 風險、亞臨床/臨床 CVD、PREVENT ≥20%。
+- **臨床對照**：10 年 ASCVD 依 2026 ACC/AHA 血脂指引分層（<3%、3–<5%、5–<10%、≥10%）；第 1 期高血壓依 2025 AHA/ACC 指引以 PREVENT 總 CVD ≥7.5% 作為用藥門檻。
+- 身高體重換算 BMI、肌酸酐以 CKD-EPI 2021（不含種族）換算 eGFR、範例病例、複製摘要、手機底部即時風險列。
 
-## 輸入項目
+## 輸入項目與有效範圍（同 preventr）
 
-| 類別 | 變數 | 頁面可調範圍 |
-| --- | --- | --- |
-| 基本資料 | 年齡 | 30–79 歲 |
-| 心血管 | 收縮壓 | 90–200 mmHg |
-| 代謝 | BMI | 18.0–40.0 kg/m² |
-| 共病與行為 | 糖尿病、吸菸 | 是／否 |
-| 腎臟 | eGFR | 15–120 mL/min |
-| 腎臟 | uACR | 0–1000 mg/g |
-| 社會健康決定因素 | SDI | 1–10 分 |
-
-所有輸入都在瀏覽器端處理；本專案沒有後端服務、資料庫或病人資料上傳功能。
-
-## 模擬邏輯
-
-目前實作會以年齡作為基礎值，再依收縮壓、BMI、糖尿病、吸菸、eGFR 與 uACR 加上不同權重。當基礎風險高於 5% 時，SDI 會套用下列示範性倍率：
-
-| SDI | 類別 | 模擬倍率 |
-| --- | --- | --- |
-| 1–3 | 低度剝奪 | 0.90 |
-| 4–6 | 中度剝奪 | 1.00 |
-| 7–10 | 高度剝奪 | 1.25 |
-
-風險結果會限制在 0.1% 至 99.9%，並依下列門檻顯示：
-
-| 模擬風險 | 顯示分類 |
+| 變數 | 範圍 |
 | --- | --- |
-| < 7.5% | 低風險 |
-| 7.5%–< 20% | 中度／臨界風險 |
-| ≥ 20% | 高風險 |
+| 年齡 | 30–79 歲 |
+| 總膽固醇 / HDL-C | 130–320 / 20–100 mg/dL |
+| 收縮壓 | 90–180 mmHg |
+| BMI | 18.5–39.9 kg/m² |
+| eGFR | 15–140 mL/min/1.73m² |
+| UACR（選填） | 0.1–25000 mg/g |
+| HbA1c（選填） | 4.5–15 % |
+| SDI（選填） | 1–10 十分位 |
+| 性別、降壓藥、statin、糖尿病、吸菸 | 是／否 |
 
-這些權重與門檻僅描述目前程式的行為，不代表正式 PREVENT 係數或完整 CKM 臨床定義。正式 PREVENT 模型另包含此頁面未收集的必要變數，例如生理性別、總膽固醇、HDL-C 與降壓治療狀態，並有不同結局與時間範圍的專屬方程式。
+超出範圍時不計算並標示紅字。已有臨床 CVD 者 PREVENT 不適用（頁面會提示）。
+
+## 限制
+
+- SDI 是美國 ZIP code 對應的社會剝奪指數十分位，台灣沒有對應的官方資料，SDI 對照僅供教學。
+- PREVENT 於美國族群建立，未在台灣族群校準。
+- CKM 分期依輸入資料推定；CKD 需持續 >3 個月，高血壓需重複測量確認。
 
 ## 使用方式
 
@@ -72,33 +60,20 @@ python3 -m http.server 8000
 
 ```text
 .
-├── .github/workflows/pages.yml  # GitHub Pages 部署流程
-├── .nojekyll                    # 停用 Jekyll 處理
-├── index.html                   # GitHub Pages 入口與重新導向
-├── prevent_simulatorSDI.html    # 介面、樣式與模擬邏輯
-└── README.md                    # 專案說明
+├── index.html                   # 重新導向到主頁
+├── prevent_simulatorSDI.html    # 介面、樣式與 PREVENT 引擎（/*ENGINE-START*/…/*ENGINE-END*/）
+├── tests.cjs                    # node tests.cjs：引擎 vs preventr 參考值、KDIGO、CKM
+├── tests-reference.json         # preventr 0.12.1 產生的 300 組參考病例
+└── README.md
 ```
-
-## 技術說明
-
-- HTML5、CSS3 與原生 JavaScript。
-- 無 npm、套件管理器或外部 JavaScript 相依套件。
-- 推送至 `main` 後，由 GitHub Actions 工作流程部署至 GitHub Pages。
-
-## 臨床與研究限制
-
-- 未使用 AHA 授權的 PREVENT 原始碼或正式模型係數。
-- 未經外部驗證、校準、區辨度分析或特定族群驗證。
-- 缺少正式 PREVENT 計算所需的部分核心輸入。
-- SDI 以 1–10 的教學尺度表示，不是由正式地理資料或 ZIP code 推算。
-- CKM 分期為簡化規則，未涵蓋完整病史、症狀、心血管疾病與亞臨床疾病判定。
-- 不儲存資料不等同於符合醫療資訊安全或個資法規要求；請勿輸入可識別個人的資料。
 
 ## 參考資料
 
-- [AHA PREVENT Calculator 官方介紹](https://professional.heart.org/en/guidelines-and-statements/about-prevent-calculator)
-- [AHA PREVENT 線上計算器](https://professional.heart.org/en/guidelines-and-statements/prevent-calculator)
-- [PREVENT Equations Quickstart Guide](https://professional.heart.org/-/media/PHD-Files/Guidelines-and-Statements/PREVENT/PREVENT-Equations-Quickstart-Guide.pdf)
+- Khan SS, et al. Development and validation of the American Heart Association's PREVENT equations. *Circulation* 2024;149:430–449.
+- Ndumele CE, et al. Cardiovascular-Kidney-Metabolic Health: A Presidential Advisory From the AHA. *Circulation* 2023;148:1606–1635.
+- KDIGO 2024 CKD guideline（GFR × 白蛋白尿風險矩陣）。
+- 2025 AHA/ACC High Blood Pressure Guideline；2026 ACC/AHA Dyslipidemia Guideline。
+- [preventr](https://github.com/martingmayer/preventr)（R 實作，用於交叉驗證）。
 
 ## 授權
 
